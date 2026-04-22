@@ -85,9 +85,9 @@ export default function DashboardPage({ player, user }) {
     )
   }
 
-  const rankCfg = getRankConfig(player.rank)
-  const nextRank = getNextRank(player.rank)
-  const isBossReady = player.rankXP >= player.rankXPToNext
+  const rankCfg = getRankConfig(player.rank || 'E')
+  const nextRank = getNextRank(player.rank || 'E')
+  const isBossReady = (player.rankXP || 0) >= (player.rankXPToNext || 500)
   const dailySteps = player.dailySteps || 0
   const stepGoal = 10000
 
@@ -114,7 +114,7 @@ export default function DashboardPage({ player, user }) {
         </button>
 
         <div className="scale-75 origin-left">
-          <RankBadge rank={player.rank} />
+          <RankBadge rank={player.rank || 'E'} />
         </div>
 
         <div className="flex-1 min-w-0 pr-6">
@@ -223,11 +223,11 @@ export default function DashboardPage({ player, user }) {
             >
               <div className="glass-card flex-1 flex flex-col p-2">
                 <div className="flex-1 relative">
-                  <StatsRadar stats={player.stats} />
+                  <StatsRadar stats={player.stats || {}} />
                 </div>
               </div>
               <div className="grid grid-cols-5 gap-1 shrink-0">
-                {Object.entries(player.stats).map(([key, val]) => (
+                {Object.entries(player.stats || {}).map(([key, val]) => (
                   <div key={key} className="flex flex-col items-center justify-center bg-white/5 rounded-lg py-1.5 border border-white/5">
                     <span className="text-sm mb-0.5">{STAT_ICONS[key]}</span>
                     <span className="font-orbitron text-[10px] font-bold text-white">{val}</span>

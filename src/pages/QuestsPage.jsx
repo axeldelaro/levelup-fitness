@@ -21,13 +21,14 @@ export default function QuestsPage({ player, user }) {
 
   // Check penalty (missed yesterday)
   const hasPenalty = (() => {
+    if (completed.includes(PENALTY_QUEST.id)) return false
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const key = `quests_${yesterday.toDateString()}`
     const yd = localStorage.getItem(key)
     if (!yd) return false
     const done = JSON.parse(yd)
-    const total = getDailyQuests(player.rank, yesterday).length
+    const total = getDailyQuests(player?.rank || 'E', yesterday).length
     return done.length < total
   })()
 
@@ -60,8 +61,15 @@ export default function QuestsPage({ player, user }) {
 
   const handlePenalty = async () => {
     if (!player) return
-    await applyPenalty(user.uid, player)
-    addNotification({ type: 'warning', message: '-20 XP — Pénalité appliquée. Ne recommence pas.' })
+    try {
+      await applyPenalty(user.uid, player)
+      const newCompleted = [...completed, PENALTY_QUEST.id]
+      setCompleted(newCompleted)
+      localStorage.setItem(`quests_${new Date().toDateString()}`, JSON.stringify(newCompleted))
+      addNotification({ type: 'warning', message: '-20 XP — Pénalité appliquée. Ne recommence pas.' })
+    } catch (e) {
+      addNotification({ type: 'error', message: 'Erreur réseau.' })
+    }
   }
 
   // Timer for timed quests
