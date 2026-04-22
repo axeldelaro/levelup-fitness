@@ -288,7 +288,7 @@ export default function DashboardPage({ player, user }) {
       >
         {[
           { label: 'QUÊTES', value: player.questsCompleted, icon: '⚔️' },
-          { label: 'PAS TOTAUX', value: (player.totalSteps + finalSteps).toLocaleString(), icon: '👟' },
+          { label: 'PAS TOTAUX', value: (player.totalSteps || 0).toLocaleString(), icon: '👟' },
           { label: 'PÉNALITÉS', value: player.penalties || 0, icon: '💀' },
         ].map(({ label, value, icon }) => (
           <div key={label} className="glass-card p-3 text-center">
