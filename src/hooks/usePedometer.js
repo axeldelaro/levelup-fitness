@@ -126,7 +126,8 @@ export const useGoogleFit = (accessToken) => {
     }
 
     fetchSteps()
-    const interval = setInterval(fetchSteps, 60 * 1000) // every 1 min
+    // Attention : 5 secondes = énorme consommation de quota d'API Google Cloud !
+    const interval = setInterval(fetchSteps, 5 * 1000)
     window.addEventListener('focus', fetchSteps) // sync when user returns to app
     
     return () => {
