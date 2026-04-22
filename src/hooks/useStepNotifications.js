@@ -103,6 +103,15 @@ export function useStepNotifications() {
         swRegistration.current = reg
         scheduleHourly()
         scheduleEvening()
+        
+        // Test notification on start
+        const lastTest = sessionStorage.getItem('notifTestDone')
+        if (!lastTest) {
+          setTimeout(() => {
+            sendNotification('⚔️ Système Actif', 'Les rappels de pas sont opérationnels, Chasseur !')
+            sessionStorage.setItem('notifTestDone', 'true')
+          }, 3000)
+        }
       })
     }
 

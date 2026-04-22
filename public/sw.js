@@ -1,11 +1,11 @@
 /* ============================================================
-   LevelUp Fitness — Service Worker
-   - Full offline support (Stale-While-Revalidate)
+   LevelUp Fitness — Service Worker (V3)
+   - Fix Network Error
    - Push notifications
    ============================================================ */
 
-const CACHE_NAME = 'levelup-v2'
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'levelup-v3'
+const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/favicon.svg',
@@ -13,15 +13,15 @@ const ASSETS_TO_CACHE = [
   '/icons/icon-512.png'
 ]
 
-// ── Install: Cache static assets ─────────────────────────────
+// ── Install ──────────────────────────────────────────────────
 self.addEventListener('install', (e) => {
   self.skipWaiting()
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   )
 })
 
-// ── Activate: Clean old caches ────────────────────────────────
+// ── Activate ─────────────────────────────────────────────────
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
@@ -35,40 +35,49 @@ self.addEventListener('activate', (e) => {
   )
 })
 
-// ── Fetch: Stale-While-Revalidate strategy ────────────────────
+// ── Fetch ────────────────────────────────────────────────────
 self.addEventListener('fetch', (e) => {
-  // Ignore Firestore/Auth and Chrome extension requests
+  // Only handle GET requests and avoid external APIs/Extensions/Vite HMR
+  const url = e.request.url
   if (
-    e.request.url.includes('firestore.googleapis.com') ||
-    e.request.url.includes('identitytoolkit.googleapis.com') ||
-    e.request.url.includes('chrome-extension') ||
-    e.request.method !== 'GET'
+    e.request.method !== 'GET' ||
+    url.includes('firestore.googleapis.com') ||
+    url.includes('identitytoolkit.googleapis.com') ||
+    url.includes('chrome-extension') ||
+    url.includes('googlevideo') ||
+    url.includes('firebase') ||
+    url.includes('@vite') ||
+    url.includes('node_modules')
   ) {
-    return
+    return // Let browser handle it normally
   }
 
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      const fetchPromise = fetch(e.request).then((networkResponse) => {
-        // Only cache valid responses
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache)
-          })
+    caches.match(e.request).then((response) => {
+      if (response) return response
+
+      return fetch(e.request).then((networkResponse) => {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse
         }
+        
+        const responseToCache = networkResponse.clone()
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(e.request, responseToCache)
+        })
         return networkResponse
       }).catch(() => {
-        // If network fails, we already have cachedResponse or undefined
-        return cachedResponse
+        // Return index.html for navigation requests if offline
+        if (e.request.mode === 'navigate') {
+          return caches.match('/')
+        }
+        return null
       })
-
-      return cachedResponse || fetchPromise
     })
   )
 })
 
-// ── Push notifications received ──────────────────────────────
+// ── Push / Notifications ─────────────────────────────────────
 self.addEventListener('push', (e) => {
   const data = e.data?.json() || { title: 'LevelUp Fitness', body: 'Enregistre tes pas !' }
   e.waitUntil(
@@ -87,11 +96,9 @@ self.addEventListener('push', (e) => {
   )
 })
 
-// ── Notification click ───────────────────────────────────────
 self.addEventListener('notificationclick', (e) => {
   e.notification.close()
   if (e.action === 'dismiss') return
-
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
@@ -105,7 +112,6 @@ self.addEventListener('notificationclick', (e) => {
   )
 })
 
-// ── Message handler ──────────────────────────────────────────
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'SHOW_STEP_REMINDER') {
     self.registration.showNotification('⚔️ LevelUp Fitness', {
