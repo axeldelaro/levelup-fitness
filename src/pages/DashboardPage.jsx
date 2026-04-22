@@ -16,7 +16,7 @@ export default function DashboardPage({ player, user }) {
   const { triggerBoss, addNotification } = useGameStore()
   const googleToken = localStorage.getItem('googleFitToken')
   const { steps: pedometerSteps, supported: pedoSupported } = usePedometer()
-  const { steps: googleSteps, loading: googleLoading } = useGoogleFit(googleToken)
+  const { steps: googleSteps, loading: googleLoading, forceSync } = useGoogleFit(googleToken)
   
   const finalSteps = googleToken && googleSteps !== null ? googleSteps : pedometerSteps
   const supported = googleToken ? true : pedoSupported
