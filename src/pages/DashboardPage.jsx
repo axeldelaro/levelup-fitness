@@ -16,7 +16,7 @@ export default function DashboardPage({ player, user }) {
   const { triggerBoss, addNotification } = useGameStore()
   const googleToken = localStorage.getItem('googleFitToken')
   const { steps: pedometerSteps, supported: pedoSupported } = usePedometer()
-  const { steps: googleSteps } = useGoogleFit(googleToken)
+  const { steps: googleSteps, loading: googleLoading } = useGoogleFit(googleToken)
   
   const finalSteps = googleToken && googleSteps !== null ? googleSteps : pedometerSteps
   const supported = googleToken ? true : pedoSupported
@@ -156,7 +156,10 @@ export default function DashboardPage({ player, user }) {
           </div>
 
           <div className="flex-1">
-            <p className="font-orbitron text-[10px] tracking-widest text-white/40">QUÊTE DE MARCHE</p>
+            <div className="flex items-center gap-2">
+              <p className="font-orbitron text-[10px] tracking-widest text-white/40">QUÊTE DE MARCHE</p>
+              {googleLoading && <div className="w-2 h-2 rounded-full border border-neon-purple border-t-transparent animate-spin" title="Synchronisation en cours..." />}
+            </div>
             <p className="font-orbitron text-2xl font-black text-neon-purple mt-1">
               {dailySteps.toLocaleString()}
             </p>
@@ -168,8 +171,14 @@ export default function DashboardPage({ player, user }) {
           <div className="text-right">
             <p className="font-orbitron text-xs text-white/40">AGILITÉ</p>
             <p className="font-orbitron text-lg font-bold text-neon-purple">+{Math.floor(dailySteps / 1000)}</p>
-            {!supported && (
+            {!supported && !googleToken && (
               <p className="font-rajdhani text-[9px] text-white/20 mt-1">capteur indispo.</p>
+            )}
+            {googleToken && (
+              <div className="flex items-center justify-end gap-1 mt-1 opacity-70">
+                <span className="text-[8px]">☁️</span>
+                <p className="font-rajdhani text-[9px] text-green-400">G-Fit</p>
+              </div>
             )}
           </div>
         </div>
