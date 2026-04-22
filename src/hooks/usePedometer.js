@@ -40,7 +40,6 @@ export const usePedometer = () => {
         (acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2
       )
 
-      // Smooth the acceleration
       smoothAcc.current = smoothAcc.current * 0.7 + magnitude * 0.3
       const delta = Math.abs(smoothAcc.current - lastAcc.current)
       lastAcc.current = smoothAcc.current
@@ -63,6 +62,9 @@ export const usePedometer = () => {
 export const useGoogleFit = (accessToken) => {
   const [steps, setSteps] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [lastStatus, setLastStatus] = useState(null)   // 'ok' | 'error' | 'empty'
+  const [lastError, setLastError] = useState(null)     // error message string
+  const [lastSyncTime, setLastSyncTime] = useState(null) // Date
 
   const fetchSteps = useCallback(async (manual = false) => {
     if (!accessToken) return
@@ -71,6 +73,9 @@ export const useGoogleFit = (accessToken) => {
       const now = Date.now()
       const startOfDay = new Date()
       startOfDay.setHours(0, 0, 0, 0)
+
+      console.log('[GoogleFit] Token présent, longueur:', accessToken.length)
+      console.log('[GoogleFit] Plage:', new Date(startOfDay).toISOString(), '→', new Date(now).toISOString())
 
       const body = {
         aggregateBy: [{ dataTypeName: 'com.google.step_count.delta' }],
@@ -91,9 +96,16 @@ export const useGoogleFit = (accessToken) => {
         }
       )
 
+      console.log('[GoogleFit] Réponse HTTP:', res.status)
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
-        throw new Error(`Google Fit HTTP ${res.status}: ${errorData.error?.message || 'Erreur inconnue'}`)
+        const errMsg = `HTTP ${res.status}: ${errorData.error?.message || 'Erreur inconnue'}`
+        console.error('[GoogleFit] Erreur:', errMsg)
+        setLastStatus('error')
+        setLastError(errMsg)
+        setLastSyncTime(new Date())
+        throw new Error(errMsg)
       }
 
       const data = await res.json()
@@ -109,22 +121,32 @@ export const useGoogleFit = (accessToken) => {
           })
         })
       }
+
+      console.log('[GoogleFit] Pas trouvés:', totalSteps, '| Buckets:', data.bucket?.length)
       setSteps(totalSteps)
-      
+      setLastStatus(totalSteps === 0 ? 'empty' : 'ok')
+      setLastError(null)
+      setLastSyncTime(new Date())
+
       if (manual) {
         import('../stores/gameStore').then(({ useGameStore }) => {
           useGameStore.getState().addNotification({
-            type: 'success',
-            message: `Synchro OK : ${totalSteps} pas trouvés dans le Cloud Google.`
+            type: totalSteps > 0 ? 'success' : 'warning',
+            message: totalSteps > 0
+              ? `✅ Synchro OK : ${totalSteps} pas dans le Cloud.`
+              : `⚠️ Google Fit répond mais 0 pas trouvés. Ouvre Google Fit et synchro manuellement.`
           })
         })
       }
     } catch (err) {
-      console.error('Google Fit error:', err)
+      console.error('[GoogleFit] Exception:', err)
+      setLastStatus('error')
+      setLastError(err.message)
+      setLastSyncTime(new Date())
       import('../stores/gameStore').then(({ useGameStore }) => {
         useGameStore.getState().addNotification({
           type: 'error',
-          message: `Erreur Synchro Pas: ${err.message}`
+          message: `Erreur Synchro: ${err.message}`
         })
       })
     } finally {
@@ -135,16 +157,14 @@ export const useGoogleFit = (accessToken) => {
   useEffect(() => {
     if (!accessToken) return
     fetchSteps()
-    const interval = setInterval(() => fetchSteps(), 5 * 60 * 1000) // every 5 mins
-    
+    const interval = setInterval(() => fetchSteps(), 5 * 60 * 1000)
     const handleFocus = () => fetchSteps()
-    window.addEventListener('focus', handleFocus) // sync when user returns to app
-    
+    window.addEventListener('focus', handleFocus)
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', handleFocus)
     }
   }, [accessToken, fetchSteps])
 
-  return { steps, loading, forceSync: () => fetchSteps(true) }
+  return { steps, loading, lastStatus, lastError, lastSyncTime, forceSync: () => fetchSteps(true) }
 }

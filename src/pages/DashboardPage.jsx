@@ -16,7 +16,7 @@ export default function DashboardPage({ player, user }) {
   const { triggerBoss, addNotification } = useGameStore()
   const googleToken = localStorage.getItem('googleFitToken')
   const { steps: pedometerSteps, supported: pedoSupported } = usePedometer()
-  const { steps: googleSteps, loading: googleLoading, forceSync } = useGoogleFit(googleToken)
+  const { steps: googleSteps, loading: googleLoading, forceSync, lastStatus, lastError, lastSyncTime } = useGoogleFit(googleToken)
   
   const finalSteps = googleToken && googleSteps !== null ? googleSteps : (pedometerSteps || 0)
   const supported = googleToken ? true : pedoSupported
@@ -179,11 +179,25 @@ export default function DashboardPage({ player, user }) {
               <button 
                 onClick={forceSync}
                 disabled={googleLoading}
-                className="flex items-center justify-end gap-1 mt-1 opacity-70 hover:opacity-100 transition-opacity disabled:opacity-30"
+                title={lastError || 'Cliquer pour forcer la synchro'}
+                className={`flex items-center justify-end gap-1 mt-1 transition-opacity disabled:opacity-30 ${
+                  lastStatus === 'ok' ? 'text-green-400' :
+                  lastStatus === 'error' ? 'text-red-400' :
+                  lastStatus === 'empty' ? 'text-yellow-400' : 'text-white/40'
+                }`}
               >
-                <span className="text-[8px]">☁️</span>
-                <p className="font-rajdhani text-[9px] text-green-400">G-Fit</p>
+                <span className="text-[8px]">
+                  {lastStatus === 'ok' ? '✅' : lastStatus === 'error' ? '❌' : lastStatus === 'empty' ? '⚠️' : '☁️'}
+                </span>
+                <span className="font-rajdhani text-[9px]">
+                  {googleLoading ? 'Sync...' : lastStatus === 'ok' ? 'OK' : lastStatus === 'error' ? 'Erreur' : lastStatus === 'empty' ? 'Vide' : 'G-Fit'}
+                </span>
               </button>
+            )}
+            {lastSyncTime && (
+              <p className="font-rajdhani text-[8px] text-white/20 mt-0.5">
+                {lastSyncTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
             )}
           </div>
         </div>
