@@ -4,7 +4,6 @@ import RankBadge from '../components/profile/RankBadge'
 import XPBar from '../components/profile/XPBar'
 import StatsRadar from '../components/profile/StatsRadar'
 import { getRankConfig, getNextRank, BOSS_WORKOUTS } from '../data/rpg'
-import { usePedometer, useGoogleFit } from '../hooks/usePedometer'
 import { useGameStore } from '../stores/gameStore'
 import { signOut } from '../firebase/auth'
 import StepEntryModal from '../components/ui/StepEntryModal'
@@ -18,13 +17,6 @@ const STAT_ICONS = {
 
 export default function DashboardPage({ player, user }) {
   const { triggerBoss, addNotification } = useGameStore()
-  const googleToken = localStorage.getItem('googleFitToken')
-  const { steps: pedometerSteps, supported: pedoSupported } = usePedometer()
-  const { steps: googleSteps, loading: googleLoading, forceSync, lastStatus, lastError, lastSyncTime } = useGoogleFit(googleToken)
-  
-  const finalSteps = googleToken && googleSteps !== null ? googleSteps : (pedometerSteps || 0)
-  const supported = googleToken ? true : pedoSupported
-  const isGooglePending = googleToken && googleSteps === null
   
   const [showStats, setShowStats] = useState(true)
   const [showStepModal, setShowStepModal] = useState(false)
@@ -79,7 +71,7 @@ export default function DashboardPage({ player, user }) {
   const nextRank = getNextRank(player.rank)
   const rankPct = Math.round((player.rankXP / player.rankXPToNext) * 100)
   const isBossReady = player.rankXP >= player.rankXPToNext
-  const dailySteps = (player.dailySteps || 0) + finalSteps
+  const dailySteps = player.dailySteps || 0
   const stepGoal = 10000
 
   return (
@@ -202,10 +194,9 @@ export default function DashboardPage({ player, user }) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="font-orbitron text-[10px] tracking-widest text-white/40">QUÊTE DE MARCHE</p>
-              {googleLoading && <div className="w-2 h-2 rounded-full border border-neon-purple border-t-transparent animate-spin" title="Synchronisation en cours..." />}
             </div>
             <p className="font-orbitron text-2xl font-black text-neon-purple mt-1">
-              {isGooglePending ? <span className="text-white/30 text-base">Chargement...</span> : dailySteps.toLocaleString()}
+              {dailySteps.toLocaleString()}
             </p>
             <p className="font-rajdhani text-sm text-white/40">
               / {stepGoal.toLocaleString()} pas — {Math.floor(dailySteps / 100)} XP gagnés
@@ -215,79 +206,19 @@ export default function DashboardPage({ player, user }) {
           <div className="text-right">
             <p className="font-orbitron text-xs text-white/40">AGILITÉ</p>
             <p className="font-orbitron text-lg font-bold text-neon-purple">+{Math.floor(dailySteps / 1000)}</p>
-            {!supported && !googleToken && (
-              <p className="font-rajdhani text-[9px] text-white/20 mt-1">capteur indispo.</p>
-            )}
-            {googleToken && (
-              <button 
-                onClick={forceSync}
-                disabled={googleLoading}
-                title={lastError || 'Cliquer pour forcer la synchro'}
-                className={`flex items-center justify-end gap-1 mt-1 transition-opacity disabled:opacity-30 ${
-                  lastStatus === 'ok' ? 'text-green-400' :
-                  lastStatus === 'error' ? 'text-red-400' :
-                  lastStatus === 'empty' ? 'text-yellow-400' : 'text-white/40'
-                }`}
-              >
-                <span className="text-[8px]">
-                  {lastStatus === 'ok' ? '✅' : lastStatus === 'error' ? '❌' : lastStatus === 'empty' ? '⚠️' : '☁️'}
-                </span>
-                <span className="font-rajdhani text-[9px]">
-                  {googleLoading ? 'Sync...' : lastStatus === 'ok' ? 'OK' : lastStatus === 'error' ? 'Erreur' : lastStatus === 'empty' ? 'Vide' : 'G-Fit'}
-                </span>
-              </button>
-            )}
-            {lastSyncTime && (
-              <p className="font-rajdhani text-[8px] text-white/20 mt-0.5">
-                {lastSyncTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            )}
           </div>
         </div>
 
-        {/* Hint when 0 steps with Google Fit connected */}
-        {googleToken && !isGooglePending && dailySteps === 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mt-3 pt-3 border-t border-white/5"
+        {/* Manual entry button */}
+        <div className="mt-3 pt-3 border-t border-white/5 flex justify-end">
+          <button
+            onClick={() => setShowStepModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors"
           >
-            <p className="font-rajdhani text-xs text-white/30 mb-2">
-              💡 Aucun pas dans le Cloud. Ouvre Google Fit sur ton téléphone et glisse vers le bas pour forcer la synchro, puis clique sur ☁️ G-Fit ci-dessus.
-            </p>
-            <div className="flex gap-2">
-              <a
-                href="https://fit.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex justify-center items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-              >
-                <span className="text-xs">🏃</span>
-                <span className="font-orbitron text-[10px] text-white/50">Google Fit</span>
-              </a>
-              <button
-                onClick={() => setShowStepModal(true)}
-                className="flex-1 flex justify-center items-center gap-2 px-3 py-1.5 rounded-lg bg-neon-purple/10 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/20 transition-colors"
-              >
-                <span className="text-xs">📝</span>
-                <span className="font-orbitron text-[10px]">Saisie Manuelle</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Manual entry button when NOT Google Fit or >0 steps */}
-        {(!googleToken || dailySteps > 0) && (
-          <div className="mt-3 pt-3 border-t border-white/5 flex justify-end">
-            <button
-              onClick={() => setShowStepModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors"
-            >
-              <span className="text-[10px]">📝</span>
-              <span className="font-orbitron text-[9px] tracking-widest">SAISIE MANUELLE</span>
-            </button>
-          </div>
-        )}
+            <span className="text-[10px]">📝</span>
+            <span className="font-orbitron text-[9px] tracking-widest">SAISIE MANUELLE</span>
+          </button>
+        </div>
 
         {/* Notifications prompt */}
         {notifPermission === 'default' && (
