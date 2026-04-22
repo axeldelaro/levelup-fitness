@@ -94,9 +94,19 @@ export const useGoogleFit = (accessToken) => {
         )
 
         const data = await res.json()
-        const bucket = data.bucket?.[0]
-        const stepData = bucket?.dataset?.[0]?.point?.[0]?.value?.[0]?.intVal || 0
-        setSteps(stepData)
+        let totalSteps = 0
+        if (data.bucket) {
+          data.bucket.forEach(b => {
+            b.dataset?.forEach(d => {
+              d.point?.forEach(p => {
+                p.value?.forEach(v => {
+                  totalSteps += v.intVal || 0
+                })
+              })
+            })
+          })
+        }
+        setSteps(totalSteps)
       } catch (err) {
         console.error('Google Fit error:', err)
       } finally {
@@ -105,8 +115,13 @@ export const useGoogleFit = (accessToken) => {
     }
 
     fetchSteps()
-    const interval = setInterval(fetchSteps, 5 * 60 * 1000) // every 5 min
-    return () => clearInterval(interval)
+    const interval = setInterval(fetchSteps, 60 * 1000) // every 1 min
+    window.addEventListener('focus', fetchSteps) // sync when user returns to app
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', fetchSteps)
+    }
   }, [accessToken])
 
   return { steps, loading }
