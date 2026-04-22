@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background-color: #0a0a0a;
+    color: #e2e8f0;
+  }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .glass-card-neon {
+    @apply glass-card border-neon-blue/30;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(0,212,255,0.1);
+  }
+
+  .glass-card-purple {
+    @apply glass-card border-neon-purple/30;
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.2), 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-card-gold {
+    @apply glass-card border-gold/30;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2), 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .neon-text {
+    @apply text-neon-blue;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.8), 0 0 20px rgba(0, 212, 255, 0.4);
+  }
+
+  .neon-text-purple {
+    @apply text-neon-purple;
+    text-shadow: 0 0 10px rgba(124, 58, 237, 0.8);
+  }
+
+  .neon-text-gold {
+    @apply text-gold;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+  }
+
+  .btn-neon {
+    @apply font-orbitron font-bold uppercase tracking-widest text-sm px-6 py-3 rounded-xl;
+    @apply bg-neon-blue/10 border border-neon-blue/50 text-neon-blue;
+    @apply transition-all duration-300 hover:bg-neon-blue/20 hover:shadow-neon active:scale-95;
+  }
+
+  .btn-neon-purple {
+    @apply font-orbitron font-bold uppercase tracking-widest text-sm px-6 py-3 rounded-xl;
+    @apply bg-neon-purple/10 border border-neon-purple/50 text-neon-purple;
+    @apply transition-all duration-300 hover:bg-neon-purple/20 hover:shadow-neon-purple active:scale-95;
+  }
+
+  .btn-gold {
+    @apply font-orbitron font-bold uppercase tracking-widest text-sm px-6 py-3 rounded-xl;
+    @apply bg-gold/10 border border-gold/50 text-gold;
+    @apply transition-all duration-300 hover:bg-gold/20 hover:shadow-neon-gold active:scale-95;
+  }
+
+  .font-orbitron { font-family: 'Orbitron', monospace; }
+  .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+
+  .scrollable {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scrollable::-webkit-scrollbar { width: 2px; }
+  .scrollable::-webkit-scrollbar-track { background: transparent; }
+  .scrollable::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 99px; }
+
+  .rank-badge-e { @apply text-rank-e border-rank-e/50 bg-rank-e/10; }
+  .rank-badge-d { @apply text-rank-d border-rank-d/50 bg-rank-d/10; }
+  .rank-badge-c { @apply text-rank-c border-rank-c/50 bg-rank-c/10; }
+  .rank-badge-b { @apply text-rank-b border-rank-b/50 bg-rank-b/10; }
+  .rank-badge-a { @apply text-rank-a border-rank-a/50 bg-rank-a/10; }
+  .rank-badge-s { @apply text-rank-s border-rank-s/50 bg-rank-s/10; }
+
+  .scanline {
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 212, 255, 0.015) 2px,
+      rgba(0, 212, 255, 0.015) 4px
+    );
+    pointer-events: none;
+  }
+}
+
+/* Animations globales */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes levelUpBlast {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scanIn {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-scan-in { animation: scanIn 0.4s ease-out forwards; }
+.animate-level-up { animation: levelUpBlast 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+.shimmer-text {
+  background: linear-gradient(90deg, #00d4ff, #7c3aed, #00d4ff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Bottom safe area for iOS */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+.bottom-safe { bottom: env(safe-area-inset-bottom, 0px); }
