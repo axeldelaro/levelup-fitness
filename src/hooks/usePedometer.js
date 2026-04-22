@@ -93,6 +93,11 @@ export const useGoogleFit = (accessToken) => {
           }
         )
 
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          throw new Error(`Google Fit HTTP ${res.status}: ${errorData.error?.message || 'Erreur inconnue'}`)
+        }
+
         const data = await res.json()
         let totalSteps = 0
         if (data.bucket) {
@@ -109,6 +114,12 @@ export const useGoogleFit = (accessToken) => {
         setSteps(totalSteps)
       } catch (err) {
         console.error('Google Fit error:', err)
+        import('../stores/gameStore').then(({ useGameStore }) => {
+          useGameStore.getState().addNotification({
+            type: 'error',
+            message: `Erreur Synchro Pas: ${err.message}`
+          })
+        })
       } finally {
         setLoading(false)
       }
