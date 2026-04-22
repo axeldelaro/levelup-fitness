@@ -2,7 +2,6 @@ import { useGameStore } from '../../stores/gameStore'
 import DashboardPage from '../../pages/DashboardPage'
 import QuestsPage from '../../pages/QuestsPage'
 import InventoryPage from '../../pages/InventoryPage'
-import ProfilePage from '../../pages/ProfilePage'
 import BottomNav from './BottomNav'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -10,7 +9,6 @@ const PAGES = {
   dashboard: DashboardPage,
   quests: QuestsPage,
   inventory: InventoryPage,
-  profile: ProfilePage,
 }
 
 export default function AppShell({ player, user }) {

@@ -15,8 +15,9 @@ export default function QuestsPage({ player, user }) {
   const { addNotification } = useGameStore()
 
   useEffect(() => {
+    if (!player?.rank) return
     setQuests(getDailyQuests(player.rank))
-  }, [])
+  }, [player?.rank])
 
   // Check penalty (missed yesterday)
   const hasPenalty = (() => {

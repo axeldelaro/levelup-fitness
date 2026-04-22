@@ -115,6 +115,10 @@ export const completeQuest = async (uid, quest, player) => {
     })
   }
 
+  if (quest.tracking) {
+    statUpdates[`totals.${quest.tracking.id}`] = increment(quest.tracking.amount)
+  }
+
   let newXP = player.xp + quest.xpReward
   let newLevel = player.level
   let newXPToNext = player.xpToNext

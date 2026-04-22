@@ -5,7 +5,6 @@ const TABS = [
   { id: 'dashboard', icon: '◈', label: 'Dashboard' },
   { id: 'quests',    icon: '⚔', label: 'Quêtes' },
   { id: 'inventory', icon: '⬡', label: 'Arsenal' },
-  { id: 'profile',   icon: '◎', label: 'Profil' },
 ]
 
 export default function BottomNav({ player }) {
