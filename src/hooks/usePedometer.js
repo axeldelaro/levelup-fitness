@@ -143,12 +143,15 @@ export const useGoogleFit = (accessToken) => {
       setLastStatus('error')
       setLastError(err.message)
       setLastSyncTime(new Date())
-      import('../stores/gameStore').then(({ useGameStore }) => {
-        useGameStore.getState().addNotification({
-          type: 'error',
-          message: `Erreur Synchro: ${err.message}`
+      
+      if (manual) {
+        import('../stores/gameStore').then(({ useGameStore }) => {
+          useGameStore.getState().addNotification({
+            type: 'error',
+            message: `Erreur Synchro Google Fit : ${err.message}`
+          })
         })
-      })
+      }
     } finally {
       setLoading(false)
     }
