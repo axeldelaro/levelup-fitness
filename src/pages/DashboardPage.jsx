@@ -175,10 +175,14 @@ export default function DashboardPage({ player, user }) {
               <p className="font-rajdhani text-[9px] text-white/20 mt-1">capteur indispo.</p>
             )}
             {googleToken && (
-              <div className="flex items-center justify-end gap-1 mt-1 opacity-70">
+              <button 
+                onClick={forceSync}
+                disabled={googleLoading}
+                className="flex items-center justify-end gap-1 mt-1 opacity-70 hover:opacity-100 transition-opacity disabled:opacity-30"
+              >
                 <span className="text-[8px]">☁️</span>
                 <p className="font-rajdhani text-[9px] text-green-400">G-Fit</p>
-              </div>
+              </button>
             )}
           </div>
         </div>

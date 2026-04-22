@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 // Détection de pas via DeviceMotion (accéléromètre)
 const STEP_THRESHOLD = 12
@@ -64,76 +64,87 @@ export const useGoogleFit = (accessToken) => {
   const [steps, setSteps] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const fetchSteps = useCallback(async (manual = false) => {
     if (!accessToken) return
+    setLoading(true)
+    try {
+      const now = Date.now()
+      const startOfDay = new Date()
+      startOfDay.setHours(0, 0, 0, 0)
 
-    const fetchSteps = async () => {
-      setLoading(true)
-      try {
-        const now = Date.now()
-        const startOfDay = new Date()
-        startOfDay.setHours(0, 0, 0, 0)
+      const body = {
+        aggregateBy: [{ dataTypeName: 'com.google.step_count.delta' }],
+        bucketByTime: { durationMillis: 86400000 },
+        startTimeMillis: startOfDay.getTime(),
+        endTimeMillis: now,
+      }
 
-        const body = {
-          aggregateBy: [{ dataTypeName: 'com.google.step_count.delta' }],
-          bucketByTime: { durationMillis: 86400000 },
-          startTimeMillis: startOfDay.getTime(),
-          endTimeMillis: now,
+      const res = await fetch(
+        'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
         }
+      )
 
-        const res = await fetch(
-          'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-          }
-        )
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(`Google Fit HTTP ${res.status}: ${errorData.error?.message || 'Erreur inconnue'}`)
+      }
 
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}))
-          throw new Error(`Google Fit HTTP ${res.status}: ${errorData.error?.message || 'Erreur inconnue'}`)
-        }
-
-        const data = await res.json()
-        let totalSteps = 0
-        if (data.bucket) {
-          data.bucket.forEach(b => {
-            b.dataset?.forEach(d => {
-              d.point?.forEach(p => {
-                p.value?.forEach(v => {
-                  totalSteps += v.intVal || 0
-                })
+      const data = await res.json()
+      let totalSteps = 0
+      if (data.bucket) {
+        data.bucket.forEach(b => {
+          b.dataset?.forEach(d => {
+            d.point?.forEach(p => {
+              p.value?.forEach(v => {
+                totalSteps += v.intVal || 0
               })
             })
           })
-        }
-        setSteps(totalSteps)
-      } catch (err) {
-        console.error('Google Fit error:', err)
+        })
+      }
+      setSteps(totalSteps)
+      
+      if (manual) {
         import('../stores/gameStore').then(({ useGameStore }) => {
           useGameStore.getState().addNotification({
-            type: 'error',
-            message: `Erreur Synchro Pas: ${err.message}`
+            type: 'success',
+            message: `Synchro OK : ${totalSteps} pas trouvés dans le Cloud Google.`
           })
         })
-      } finally {
-        setLoading(false)
       }
-    }
-
-    fetchSteps()
-    const interval = setInterval(fetchSteps, 5 * 60 * 1000) // every 5 mins
-    window.addEventListener('focus', fetchSteps) // sync when user returns to app
-    
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('focus', fetchSteps)
+    } catch (err) {
+      console.error('Google Fit error:', err)
+      import('../stores/gameStore').then(({ useGameStore }) => {
+        useGameStore.getState().addNotification({
+          type: 'error',
+          message: `Erreur Synchro Pas: ${err.message}`
+        })
+      })
+    } finally {
+      setLoading(false)
     }
   }, [accessToken])
 
-  return { steps, loading }
+  useEffect(() => {
+    if (!accessToken) return
+    fetchSteps()
+    const interval = setInterval(() => fetchSteps(), 5 * 60 * 1000) // every 5 mins
+    
+    const handleFocus = () => fetchSteps()
+    window.addEventListener('focus', handleFocus) // sync when user returns to app
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [accessToken, fetchSteps])
+
+  return { steps, loading, forceSync: () => fetchSteps(true) }
 }
