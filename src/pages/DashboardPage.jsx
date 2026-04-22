@@ -7,6 +7,10 @@ import { getRankConfig, getNextRank, BOSS_WORKOUTS } from '../data/rpg'
 import { usePedometer, useGoogleFit } from '../hooks/usePedometer'
 import { useGameStore } from '../stores/gameStore'
 import { signOut } from '../firebase/auth'
+import StepEntryModal from '../components/ui/StepEntryModal'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../firebase/config'
+import { useStepNotifications } from '../hooks/useStepNotifications'
 
 const STAT_ICONS = {
   strength: '⚡', agility: '💨', endurance: '🔥', vitality: '💚', intelligence: '🔮'
@@ -23,6 +27,45 @@ export default function DashboardPage({ player, user }) {
   const isGooglePending = googleToken && googleSteps === null
   
   const [showStats, setShowStats] = useState(true)
+  const [showStepModal, setShowStepModal] = useState(false)
+  const [notifPermission, setNotifPermission] = useState('Notification' in window ? Notification.permission : 'denied')
+  
+  const { requestPermissionAndStart } = useStepNotifications()
+
+  useEffect(() => {
+    const handleOpenModal = () => setShowStepModal(true)
+    window.addEventListener('openStepEntry', handleOpenModal)
+    return () => window.removeEventListener('openStepEntry', handleOpenModal)
+  }, [])
+
+  const handleEnableNotifs = async () => {
+    const success = await requestPermissionAndStart()
+    if (success) {
+      setNotifPermission('granted')
+      addNotification({ type: 'success', message: 'Rappels activés !' })
+    } else {
+      setNotifPermission('denied')
+    }
+  }
+
+  const handleManualStepSubmit = async (steps) => {
+    if (!player || !user) return
+    try {
+      const diff = steps - (player.dailySteps || 0)
+      if (diff === 0) return
+      
+      const newTotal = (player.totalSteps || 0) + diff
+      
+      await updateDoc(doc(db, 'players', user.uid), {
+        dailySteps: steps,
+        totalSteps: newTotal
+      })
+      addNotification({ type: 'success', message: 'Pas enregistrés avec succès !' })
+    } catch (err) {
+      console.error(err)
+      addNotification({ type: 'error', message: 'Erreur lors de la sauvegarde.' })
+    }
+  }
 
   if (!player) {
     return (
@@ -212,18 +255,60 @@ export default function DashboardPage({ player, user }) {
             <p className="font-rajdhani text-xs text-white/30 mb-2">
               💡 Aucun pas dans le Cloud. Ouvre Google Fit sur ton téléphone et glisse vers le bas pour forcer la synchro, puis clique sur ☁️ G-Fit ci-dessus.
             </p>
-            <a
-              href="https://fit.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-            >
-              <span className="text-xs">🏃</span>
-              <span className="font-orbitron text-[10px] text-white/50">Ouvrir Google Fit</span>
-            </a>
+            <div className="flex gap-2">
+              <a
+                href="https://fit.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex justify-center items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+              >
+                <span className="text-xs">🏃</span>
+                <span className="font-orbitron text-[10px] text-white/50">Google Fit</span>
+              </a>
+              <button
+                onClick={() => setShowStepModal(true)}
+                className="flex-1 flex justify-center items-center gap-2 px-3 py-1.5 rounded-lg bg-neon-purple/10 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/20 transition-colors"
+              >
+                <span className="text-xs">📝</span>
+                <span className="font-orbitron text-[10px]">Saisie Manuelle</span>
+              </button>
+            </div>
           </motion.div>
         )}
+
+        {/* Manual entry button when NOT Google Fit or >0 steps */}
+        {(!googleToken || dailySteps > 0) && (
+          <div className="mt-3 pt-3 border-t border-white/5 flex justify-end">
+            <button
+              onClick={() => setShowStepModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors"
+            >
+              <span className="text-[10px]">📝</span>
+              <span className="font-orbitron text-[9px] tracking-widest">SAISIE MANUELLE</span>
+            </button>
+          </div>
+        )}
+
+        {/* Notifications prompt */}
+        {notifPermission === 'default' && (
+          <div className="mt-3 pt-3 border-t border-white/5">
+            <button
+              onClick={handleEnableNotifs}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neon-blue/10 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/20 transition-colors"
+            >
+              <span>🔔</span>
+              <span className="font-orbitron text-[10px] tracking-widest">ACTIVER LES RAPPELS DE PAS</span>
+            </button>
+          </div>
+        )}
       </motion.div>
+      
+      <StepEntryModal 
+        isOpen={showStepModal} 
+        onClose={() => setShowStepModal(false)} 
+        onSubmit={handleManualStepSubmit}
+        currentSteps={player.dailySteps || 0}
+      />
 
       {/* ── STATS ── */}
       <motion.div

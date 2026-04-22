@@ -8,11 +8,14 @@ import NotificationToast from './components/ui/NotificationToast'
 import { useGameStore } from './stores/gameStore'
 import { useEffect } from 'react'
 import { URGENT_QUEST_TEMPLATES } from './data/quests'
+import { useStepNotifications } from './hooks/useStepNotifications'
 
 export default function App() {
   const { user, loading } = useAuth()
   const player = usePlayer(user?.uid)
   const { showLevelUpOverlay, showUrgentQuest, triggerUrgentQuest, notifications } = useGameStore()
+
+  const { requestPermissionAndStart } = useStepNotifications()
 
   // Urgent quest random trigger (toutes les 2-4h)
   useEffect(() => {
@@ -28,8 +31,12 @@ export default function App() {
       }
     }
     const interval = setInterval(checkUrgent, 15 * 60 * 1000) // check every 15min
+    
+    // Attempt to start notifications if already granted
+    requestPermissionAndStart()
+    
     return () => clearInterval(interval)
-  }, [user])
+  }, [user, requestPermissionAndStart])
 
   if (loading) {
     return (
