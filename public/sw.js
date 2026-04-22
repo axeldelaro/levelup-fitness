@@ -1,12 +1,11 @@
 /* ============================================================
-   LevelUp Fitness — Service Worker (V3)
-   - Fix Network Error
-   - Push notifications
+   LevelUp Fitness — Service Worker v4
+   RÈGLE ABSOLUE : ne jamais appeler respondWith() sur des
+   requêtes externes. Seulement pour les fichiers locaux statiques.
    ============================================================ */
 
-const CACHE_NAME = 'levelup-v3'
+const CACHE_NAME = 'levelup-v4'
 const STATIC_ASSETS = [
-  '/',
   '/index.html',
   '/favicon.svg',
   '/icons/icon-192.png',
@@ -26,58 +25,49 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
       clients.claim(),
-      caches.keys().then((keys) => {
-        return Promise.all(
-          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-        )
-      })
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      )
     ])
   )
 })
 
-// ── Fetch ────────────────────────────────────────────────────
+// ── Fetch : ONLY intercept same-origin GET requests ───────────
 self.addEventListener('fetch', (e) => {
-  // Only handle GET requests and avoid external APIs/Extensions/Vite HMR
-  const url = e.request.url
+  const url = new URL(e.request.url)
+
+  // ❌ Let pass through: non-GET, cross-origin, websockets, etc.
   if (
     e.request.method !== 'GET' ||
-    url.includes('firestore.googleapis.com') ||
-    url.includes('identitytoolkit.googleapis.com') ||
-    url.includes('chrome-extension') ||
-    url.includes('googlevideo') ||
-    url.includes('firebase') ||
-    url.includes('@vite') ||
-    url.includes('node_modules')
+    url.origin !== self.location.origin
   ) {
-    return // Let browser handle it normally
+    return // Do NOT call e.respondWith() — browser handles it normally
   }
 
+  // ✅ Same-origin GET: cache-first for static assets, network-first for the rest
   e.respondWith(
-    caches.match(e.request).then((response) => {
-      if (response) return response
+    caches.match(e.request).then((cached) => {
+      if (cached) return cached
 
-      return fetch(e.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse
+      return fetch(e.request).then((response) => {
+        // Cache valid responses for static assets
+        if (response.ok && response.type === 'basic') {
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone))
         }
-        
-        const responseToCache = networkResponse.clone()
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, responseToCache)
-        })
-        return networkResponse
+        return response
       }).catch(() => {
-        // Return index.html for navigation requests if offline
+        // Offline fallback: serve cached index.html for navigation
         if (e.request.mode === 'navigate') {
-          return caches.match('/')
+          return caches.match('/index.html')
         }
-        return null
+        return new Response('', { status: 503 })
       })
     })
   )
 })
 
-// ── Push / Notifications ─────────────────────────────────────
+// ── Notifications ─────────────────────────────────────────────
 self.addEventListener('push', (e) => {
   const data = e.data?.json() || { title: 'LevelUp Fitness', body: 'Enregistre tes pas !' }
   e.waitUntil(
@@ -87,7 +77,6 @@ self.addEventListener('push', (e) => {
       badge: '/icons/icon-192.png',
       tag: data.tag || 'step-reminder',
       renotify: true,
-      data: { url: data.url || '/' },
       actions: [
         { action: 'open', title: '📊 Enregistrer' },
         { action: 'dismiss', title: 'Plus tard' }
@@ -100,8 +89,8 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close()
   if (e.action === 'dismiss') return
   e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.postMessage({ type: 'OPEN_STEP_ENTRY' })
           return client.focus()
@@ -115,7 +104,7 @@ self.addEventListener('notificationclick', (e) => {
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'SHOW_STEP_REMINDER') {
     self.registration.showNotification('⚔️ LevelUp Fitness', {
-      body: e.data.body || 'Il est temps d\'enregistrer tes pas !',
+      body: e.data.body || 'Enregistre tes pas, Chasseur !',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: 'step-reminder',
