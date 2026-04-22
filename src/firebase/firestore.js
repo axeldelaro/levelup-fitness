@@ -1,9 +1,25 @@
-import { doc, onSnapshot, updateDoc, serverTimestamp, increment, arrayUnion } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, serverTimestamp, increment, arrayUnion, setDoc } from 'firebase/firestore'
 import { db } from './config'
+import { INITIAL_PLAYER } from './auth'
 
 export const subscribeToPlayer = (uid, callback) =>
-  onSnapshot(doc(db, 'players', uid), (snap) => {
-    if (snap.exists()) callback({ id: snap.id, ...snap.data() })
+  onSnapshot(doc(db, 'players', uid), async (snap) => {
+    if (snap.exists()) {
+      callback({ id: snap.id, ...snap.data() })
+    } else {
+      console.warn("Document joueur introuvable, création du profil de secours...")
+      // Créer un profil de base si manquant
+      const docRef = doc(db, 'players', uid)
+      await setDoc(docRef, {
+        ...INITIAL_PLAYER,
+        uid: uid,
+        username: `Chasseur_${Math.floor(Math.random() * 9999)}`,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastActiveDate: new Date().toDateString(),
+      })
+      // Le snapshot se redéclenchera automatiquement une fois créé
+    }
   })
 
 export const updatePlayer = (uid, data) =>

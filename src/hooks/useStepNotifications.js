@@ -72,9 +72,10 @@ export function useStepNotifications() {
 
     // Register service worker
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      const swUrl = `${import.meta.env.BASE_URL}sw.js`
+      const reg = await navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL })
       swRegistration.current = reg
-      console.log('[Notifs] Service Worker enregistré')
+      console.log('[Notifs] Service Worker enregistré avec scope:', import.meta.env.BASE_URL)
     } catch (err) {
       console.error('[Notifs] Erreur SW:', err)
       return false
@@ -99,7 +100,8 @@ export function useStepNotifications() {
   useEffect(() => {
     // Auto-start if permission already granted
     if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
+      const swUrl = `${import.meta.env.BASE_URL}sw.js`
+      navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL }).then((reg) => {
         swRegistration.current = reg
         scheduleHourly()
         scheduleEvening()
