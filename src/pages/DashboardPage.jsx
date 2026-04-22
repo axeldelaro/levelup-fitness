@@ -18,8 +18,9 @@ export default function DashboardPage({ player, user }) {
   const { steps: pedometerSteps, supported: pedoSupported } = usePedometer()
   const { steps: googleSteps, loading: googleLoading, forceSync } = useGoogleFit(googleToken)
   
-  const finalSteps = googleToken && googleSteps !== null ? googleSteps : pedometerSteps
+  const finalSteps = googleToken && googleSteps !== null ? googleSteps : (pedometerSteps || 0)
   const supported = googleToken ? true : pedoSupported
+  const isGooglePending = googleToken && googleSteps === null
   
   const [showStats, setShowStats] = useState(true)
 
@@ -35,7 +36,7 @@ export default function DashboardPage({ player, user }) {
   const nextRank = getNextRank(player.rank)
   const rankPct = Math.round((player.rankXP / player.rankXPToNext) * 100)
   const isBossReady = player.rankXP >= player.rankXPToNext
-  const dailySteps = player.dailySteps + finalSteps
+  const dailySteps = (player.dailySteps || 0) + finalSteps
   const stepGoal = 10000
 
   return (
@@ -161,7 +162,7 @@ export default function DashboardPage({ player, user }) {
               {googleLoading && <div className="w-2 h-2 rounded-full border border-neon-purple border-t-transparent animate-spin" title="Synchronisation en cours..." />}
             </div>
             <p className="font-orbitron text-2xl font-black text-neon-purple mt-1">
-              {dailySteps.toLocaleString()}
+              {isGooglePending ? <span className="text-white/30 text-base">Chargement...</span> : dailySteps.toLocaleString()}
             </p>
             <p className="font-rajdhani text-sm text-white/40">
               / {stepGoal.toLocaleString()} pas — {Math.floor(dailySteps / 100)} XP gagnés
