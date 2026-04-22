@@ -187,6 +187,28 @@ export default function DashboardPage({ player, user }) {
             )}
           </div>
         </div>
+
+        {/* Hint when 0 steps with Google Fit connected */}
+        {googleToken && !isGooglePending && dailySteps === 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-3 pt-3 border-t border-white/5"
+          >
+            <p className="font-rajdhani text-xs text-white/30 mb-2">
+              💡 Aucun pas dans le Cloud. Ouvre Google Fit sur ton téléphone et glisse vers le bas pour forcer la synchro, puis clique sur ☁️ G-Fit ci-dessus.
+            </p>
+            <a
+              href="https://fit.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            >
+              <span className="text-xs">🏃</span>
+              <span className="font-orbitron text-[10px] text-white/50">Ouvrir Google Fit</span>
+            </a>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* ── STATS ── */}
