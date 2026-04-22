@@ -5,10 +5,9 @@
 
 const EXERCISES = {
   cardio: [
-    { id: 'run', name: 'Course', icon: '🏃', trackId: 'distance_m', baseAmount: 1000, stat: 'endurance', desc: 'Garde un rythme constant et respire bien.' },
-    { id: 'jump_rope', name: 'Saut à la corde', icon: '🪢', trackId: 'jumps', baseAmount: 100, stat: 'agility', desc: 'Sur la pointe des pieds, fluide.' },
+    { id: 'run', name: 'Course / Marche', icon: '🏃', trackId: 'distance_m', baseAmount: 1000, stat: 'endurance', desc: 'Garde un rythme constant et respire bien.' },
+    { id: 'jump_rope', name: 'Saut à la corde', icon: '🪢', trackId: 'jumps', baseAmount: 100, stat: 'agility', desc: 'Sur la pointe des pieds, fluide. (Mime le mouvement si tu n\'as pas de corde)' },
     { id: 'burpees', name: 'Burpees', icon: '🔄', trackId: 'burpees', baseAmount: 10, stat: 'vitality', desc: 'Poitrine au sol, saut explosif.' },
-    { id: 'cycling', name: 'Vélo', icon: '🚴', trackId: 'distance_m', baseAmount: 3000, stat: 'endurance', desc: 'Pédale avec intensité.' },
     { id: 'shadowbox', name: 'Shadowboxing', icon: '🥊', trackId: 'minutes', baseAmount: 3, stat: 'agility', desc: 'Mouvements fluides et esquives.' }
   ],
   strength: [
@@ -50,12 +49,11 @@ const MODIFIERS = {
     { id: 'normal', name: '', xpMult: 1, diffMult: 1 },
     { id: 'hiit', name: 'en HIIT (30s on/15s off)', xpMult: 1.5, diffMult: 0.8 },
     { id: 'sprint', name: 'Sprint', xpMult: 1.6, diffMult: 0.5 },
-    { id: 'hill', name: 'en Côte / Inclinaison', xpMult: 1.4, diffMult: 0.7 },
+    { id: 'hill', name: 'en Montée (Escaliers/Côte)', xpMult: 1.4, diffMult: 0.7 },
   ],
   endurance: [
     { id: 'normal', name: '', xpMult: 1, diffMult: 1 },
-    { id: 'weighted', name: 'Lesté (+5/10kg)', xpMult: 1.8, diffMult: 0.7 },
-    { id: 'one_leg', name: 'sur 1 Jambe', xpMult: 1.5, diffMult: 0.5 },
+    { id: 'one_leg', name: 'sur 1 Jambe / 1 Bras', xpMult: 1.5, diffMult: 0.5 },
   ],
   flexibility: [{ id: 'normal', name: '', xpMult: 1, diffMult: 1 }],
   mind: [{ id: 'normal', name: '', xpMult: 1, diffMult: 1 }]
