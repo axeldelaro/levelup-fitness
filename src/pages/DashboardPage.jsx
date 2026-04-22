@@ -20,6 +20,7 @@ export default function DashboardPage({ player, user }) {
   
   const [showStats, setShowStats] = useState(true)
   const [showStepModal, setShowStepModal] = useState(false)
+  const [notifDismissed, setNotifDismissed] = useState(localStorage.getItem('notifPromptDismissed') === 'true')
   const [notifPermission, setNotifPermission] = useState('Notification' in window ? Notification.permission : 'denied')
   
   const { requestPermissionAndStart } = useStepNotifications()
@@ -34,10 +35,16 @@ export default function DashboardPage({ player, user }) {
     const success = await requestPermissionAndStart()
     if (success) {
       setNotifPermission('granted')
+      localStorage.setItem('notifPromptDismissed', 'true')
       addNotification({ type: 'success', message: 'Rappels activés !' })
     } else {
       setNotifPermission('denied')
     }
+  }
+
+  const handleDismissNotifs = () => {
+    setNotifDismissed(true)
+    localStorage.setItem('notifPromptDismissed', 'true')
   }
 
   const handleManualStepSubmit = async (steps) => {
@@ -221,14 +228,21 @@ export default function DashboardPage({ player, user }) {
         </div>
 
         {/* Notifications prompt */}
-        {notifPermission === 'default' && (
-          <div className="mt-3 pt-3 border-t border-white/5">
+        {notifPermission === 'default' && !notifDismissed && (
+          <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
             <button
               onClick={handleEnableNotifs}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neon-blue/10 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/20 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neon-blue/10 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/20 transition-colors"
             >
               <span>🔔</span>
-              <span className="font-orbitron text-[10px] tracking-widest">ACTIVER LES RAPPELS DE PAS</span>
+              <span className="font-orbitron text-[10px] tracking-widest">ACTIVER LES RAPPELS</span>
+            </button>
+            <button
+              onClick={handleDismissNotifs}
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/30 hover:bg-white/10 transition-colors"
+              title="Ne plus afficher"
+            >
+              ✕
             </button>
           </div>
         )}
