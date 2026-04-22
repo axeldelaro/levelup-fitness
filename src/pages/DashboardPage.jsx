@@ -4,7 +4,7 @@ import RankBadge from '../components/profile/RankBadge'
 import XPBar from '../components/profile/XPBar'
 import StatsRadar from '../components/profile/StatsRadar'
 import { getRankConfig, getNextRank, BOSS_WORKOUTS } from '../data/rpg'
-import { usePedometer } from '../hooks/usePedometer'
+import { usePedometer, useGoogleFit } from '../hooks/usePedometer'
 import { useGameStore } from '../stores/gameStore'
 import { signOut } from '../firebase/auth'
 
@@ -14,7 +14,13 @@ const STAT_ICONS = {
 
 export default function DashboardPage({ player, user }) {
   const { triggerBoss, addNotification } = useGameStore()
-  const { steps: pedometerSteps, supported } = usePedometer()
+  const googleToken = localStorage.getItem('googleFitToken')
+  const { steps: pedometerSteps, supported: pedoSupported } = usePedometer()
+  const { steps: googleSteps } = useGoogleFit(googleToken)
+  
+  const finalSteps = googleToken && googleSteps !== null ? googleSteps : pedometerSteps
+  const supported = googleToken ? true : pedoSupported
+  
   const [showStats, setShowStats] = useState(true)
 
   if (!player) {
@@ -29,7 +35,7 @@ export default function DashboardPage({ player, user }) {
   const nextRank = getNextRank(player.rank)
   const rankPct = Math.round((player.rankXP / player.rankXPToNext) * 100)
   const isBossReady = player.rankXP >= player.rankXPToNext
-  const dailySteps = player.dailySteps + pedometerSteps
+  const dailySteps = player.dailySteps + finalSteps
   const stepGoal = 10000
 
   return (
@@ -216,7 +222,7 @@ export default function DashboardPage({ player, user }) {
       >
         {[
           { label: 'QUÊTES', value: player.questsCompleted, icon: '⚔️' },
-          { label: 'PAS TOTAUX', value: (player.totalSteps + pedometerSteps).toLocaleString(), icon: '👟' },
+          { label: 'PAS TOTAUX', value: (player.totalSteps + finalSteps).toLocaleString(), icon: '👟' },
           { label: 'PÉNALITÉS', value: player.penalties || 0, icon: '💀' },
         ].map(({ label, value, icon }) => (
           <div key={label} className="glass-card p-3 text-center">

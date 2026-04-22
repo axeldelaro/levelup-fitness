@@ -22,25 +22,11 @@ export default function SettingsPage({ player, user }) {
         className="glass-card-neon p-4 mb-4">
         <p className="font-orbitron text-[10px] tracking-widest text-white/40 mb-3">COMPTE CHASSEUR</p>
         <div className="space-y-3">
-          <InfoRow label="ID" value={user?.uid?.slice(0, 16) + '...'} />
           <InfoRow label="EMAIL" value={user?.email} />
           <InfoRow label="UTILISATEUR" value={player?.username} />
           <InfoRow label="RANG" value={player?.rank} colored />
           <InfoRow label="NIVEAU" value={`LV.${player?.level}`} />
           <InfoRow label="XP TOTAL" value={player?.xp?.toLocaleString()} />
-        </div>
-      </motion.div>
-
-      {/* PWA Install */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
-        className="glass-card p-4 mb-4">
-        <p className="font-orbitron text-[10px] tracking-widest text-white/40 mb-3">INSTALLATION PWA</p>
-        <p className="font-rajdhani text-sm text-white/60 mb-3">
-          Installe LevelUp Fitness sur ton écran d'accueil pour une expérience native.
-        </p>
-        <div className="space-y-2 text-sm font-rajdhani text-white/50">
-          <p>📱 <span className="text-white/70">iOS :</span> Safari → Partager → Sur l'écran d'accueil</p>
-          <p>🤖 <span className="text-white/70">Android :</span> Chrome → ⋮ → Ajouter à l'écran d'accueil</p>
         </div>
       </motion.div>
 
@@ -50,8 +36,6 @@ export default function SettingsPage({ player, user }) {
         <p className="font-orbitron text-[10px] tracking-widest text-white/40 mb-3">À PROPOS</p>
         <div className="space-y-2">
           <InfoRow label="VERSION" value="1.0.0" />
-          <InfoRow label="THÈME" value="Solo Leveling RPG" />
-          <InfoRow label="FIREBASE" value="sololeveling-a5b58" />
         </div>
       </motion.div>
 

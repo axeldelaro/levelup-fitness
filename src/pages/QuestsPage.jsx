@@ -15,7 +15,7 @@ export default function QuestsPage({ player, user }) {
   const { addNotification } = useGameStore()
 
   useEffect(() => {
-    setQuests(getDailyQuests())
+    setQuests(getDailyQuests(player.rank))
   }, [])
 
   // Check penalty (missed yesterday)
@@ -26,7 +26,7 @@ export default function QuestsPage({ player, user }) {
     const yd = localStorage.getItem(key)
     if (!yd) return false
     const done = JSON.parse(yd)
-    const total = getDailyQuests(yesterday).length
+    const total = getDailyQuests(player.rank, yesterday).length
     return done.length < total
   })()
 
