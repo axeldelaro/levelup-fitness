@@ -21,7 +21,7 @@ export default function QuestsPage({ player, user }) {
 
   // Check penalty (missed yesterday)
   const hasPenalty = (() => {
-    if (completed.includes(PENALTY_QUEST.id)) return false
+    if ((completed || []).includes(PENALTY_QUEST.id)) return false
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const key = `quests_${yesterday.toDateString()}`
@@ -90,7 +90,9 @@ export default function QuestsPage({ player, user }) {
     return () => clearInterval(interval)
   }, [activeTimer])
 
-  const allDone = quests.length > 0 && completed.length >= quests.length
+  const activeQuests = quests || []
+  const activeCompleted = completed || []
+  const allDone = activeQuests.length > 0 && activeCompleted.length >= activeQuests.length
 
   return (
     <div className="h-full overflow-y-auto scrollable px-4 pt-4 pb-2">
@@ -144,12 +146,12 @@ export default function QuestsPage({ player, user }) {
       {/* Progress */}
       <div className="glass-card p-3 mb-4 flex items-center gap-3">
         <div className="flex gap-1.5">
-          {quests.map((q) => (
-            <div key={q.id} className={`w-2 h-2 rounded-full transition-all duration-300 ${completed.includes(q.id) ? 'bg-neon-blue shadow-neon' : 'bg-white/20'}`} />
+          {(activeQuests || []).map((q) => (
+            <div key={q.id} className={`w-2 h-2 rounded-full transition-all duration-300 ${(activeCompleted || []).includes(q.id) ? 'bg-neon-blue shadow-neon' : 'bg-white/20'}`} />
           ))}
         </div>
         <span className="font-orbitron text-xs text-white/50">
-          {completed.length}/{quests.length} COMPLÉTÉES
+          {(activeCompleted || []).length}/{(activeQuests || []).length} COMPLÉTÉES
         </span>
         {player && (
           <div className="ml-auto flex items-center gap-1">

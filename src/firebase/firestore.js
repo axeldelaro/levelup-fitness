@@ -77,9 +77,11 @@ export const resetDailySteps = async (uid, player) => {
 
   await updatePlayer(uid, {
     dailySteps: 0,
-    totalSteps: increment(player.dailySteps || 0),
+    totalSteps: (player.totalSteps || 0) + (player.dailySteps || 0),
     stepHistory: newHistory,
     lastResetDate: today,
+  }).catch(err => {
+    console.error("Erreur lors de resetDailySteps:", err)
   })
 }
 
