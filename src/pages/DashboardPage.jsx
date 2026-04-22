@@ -313,6 +313,52 @@ export default function DashboardPage({ player, user }) {
         ))}
       </motion.div>
 
+      {/* ── NEXT OBJECTIVE ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="glass-card p-4 mb-4"
+      >
+        <p className="font-orbitron text-[10px] tracking-widest text-white/40 mb-3">PROCHAIN OBJECTIF</p>
+        <div className="space-y-3">
+          {/* XP to next level */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="font-rajdhani text-sm text-white/60">⚡ Niveau {player.level + 1}</span>
+              <span className="font-orbitron text-xs text-neon-blue">
+                {(player.xpToNext - player.xp).toLocaleString()} XP
+              </span>
+            </div>
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-neon-blue"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (player.xp / player.xpToNext) * 100)}%` }}
+                transition={{ duration: 1, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+          {/* Steps to goal */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="font-rajdhani text-sm text-white/60">🚶 10 000 pas</span>
+              <span className="font-orbitron text-xs text-neon-purple">
+                {Math.max(0, 10000 - dailySteps).toLocaleString()} restants
+              </span>
+            </div>
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-neon-purple"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (dailySteps / 10000) * 100)}%` }}
+                transition={{ duration: 1, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       <BossModal player={player} />
     </div>
   )

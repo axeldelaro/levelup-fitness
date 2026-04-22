@@ -1,4 +1,4 @@
-import { doc, onSnapshot, updateDoc, serverTimestamp, increment } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, serverTimestamp, increment, arrayUnion } from 'firebase/firestore'
 import { db } from './config'
 
 export const subscribeToPlayer = (uid, callback) =>
@@ -9,6 +9,7 @@ export const subscribeToPlayer = (uid, callback) =>
 export const updatePlayer = (uid, data) =>
   updateDoc(doc(db, 'players', uid), { ...data, updatedAt: serverTimestamp() })
 
+// ── XP & Level Up ────────────────────────────────────────────
 export const addXP = async (uid, amount, player) => {
   let newXP = player.xp + amount
   let newLevel = player.level
@@ -16,7 +17,6 @@ export const addXP = async (uid, amount, player) => {
   let newRankXP = player.rankXP + Math.floor(amount * 0.3)
   let newGold = player.gold + Math.floor(amount * 0.1)
 
-  // Level up
   while (newXP >= newXPToNext) {
     newXP -= newXPToNext
     newLevel++
@@ -35,18 +35,69 @@ export const addXP = async (uid, amount, player) => {
   return { leveledUp: newLevel > player.level, newLevel }
 }
 
-export const addSteps = async (uid, steps, player) => {
-  const bonusXP = Math.floor(steps / 100)
-  const bonusAgility = Math.floor(steps / 1000)
-  
+// ── Rank Up ──────────────────────────────────────────────────
+const RANK_PROGRESSION = {
+  E: { next: 'D', rankXPToNext: 1500 },
+  D: { next: 'C', rankXPToNext: 3500 },
+  C: { next: 'B', rankXPToNext: 7500 },
+  B: { next: 'A', rankXPToNext: 15000 },
+  A: { next: 'S', rankXPToNext: 999999 },
+}
+
+export const performRankUp = async (uid, player) => {
+  const progression = RANK_PROGRESSION[player.rank]
+  if (!progression) return null
+
+  const newRank = progression.next
+  const rankXPToNext = progression.rankXPToNext
+
   await updatePlayer(uid, {
-    totalSteps: increment(steps),
-    dailySteps: increment(steps),
-    'stats.agility': Math.min(player.stats.agility + bonusAgility, 999),
-    xp: increment(bonusXP),
+    rank: newRank,
+    rankXP: 0,
+    rankXPToNext,
+    gold: increment(500),
+  })
+
+  return newRank
+}
+
+// ── Steps ────────────────────────────────────────────────────
+export const resetDailySteps = async (uid, player) => {
+  const today = new Date().toDateString()
+  if (player.lastResetDate === today) return // Already reset today
+
+  const history = player.stepHistory || []
+  const yesterday = {
+    date: player.lastResetDate || new Date(Date.now() - 86400000).toDateString(),
+    steps: player.dailySteps || 0,
+  }
+
+  // Keep only last 7 days
+  const newHistory = [...history, yesterday].slice(-7)
+
+  await updatePlayer(uid, {
+    dailySteps: 0,
+    totalSteps: increment(player.dailySteps || 0),
+    stepHistory: newHistory,
+    lastResetDate: today,
   })
 }
 
+export const rewardStepMilestone = async (uid, player, milestone = 10000) => {
+  const alreadyRewarded = player[`stepReward_${milestone}_${new Date().toDateString()}`]
+  if (alreadyRewarded) return false
+
+  await updatePlayer(uid, {
+    xp: increment(100),
+    gold: increment(50),
+    rankXP: increment(30),
+    [`stepReward_${milestone}_${new Date().toDateString()}`]: true,
+  })
+
+  return true
+}
+
+// ── Purchases ────────────────────────────────────────────────
 export const purchaseItem = async (uid, item, player) => {
   if (player.gold < item.price) throw new Error('Or insuffisant')
   await updatePlayer(uid, {
@@ -55,6 +106,7 @@ export const purchaseItem = async (uid, item, player) => {
   })
 }
 
+// ── Quests ───────────────────────────────────────────────────
 export const completeQuest = async (uid, quest, player) => {
   const statUpdates = {}
   if (quest.statBonus) {
@@ -63,15 +115,32 @@ export const completeQuest = async (uid, quest, player) => {
     })
   }
 
+  let newXP = player.xp + quest.xpReward
+  let newLevel = player.level
+  let newXPToNext = player.xpToNext
+  let didLevelUp = false
+
+  while (newXP >= newXPToNext) {
+    newXP -= newXPToNext
+    newLevel++
+    newXPToNext = Math.floor(100 * Math.pow(1.15, newLevel - 1))
+    didLevelUp = true
+  }
+
   await updatePlayer(uid, {
-    xp: increment(quest.xpReward),
+    xp: newXP,
+    level: newLevel,
+    xpToNext: newXPToNext,
     gold: increment(quest.goldReward),
     rankXP: increment(Math.floor(quest.xpReward * 0.3)),
     questsCompleted: increment(1),
     ...statUpdates,
   })
+
+  return { leveledUp: didLevelUp, newLevel }
 }
 
+// ── Penalty ──────────────────────────────────────────────────
 export const applyPenalty = async (uid, player) => {
   await updatePlayer(uid, {
     xp: Math.max(0, player.xp - 20),

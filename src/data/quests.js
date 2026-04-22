@@ -1,3 +1,4 @@
+import { generateExtraQuests } from './extraQuests'
 // Auto-generated 150 quests for LevelUp Fitness RPG
 export const QUESTS_BY_RANK = {
   "E": [
@@ -2005,11 +2006,14 @@ export const PENALTY_QUEST = {
 export const getDailyQuests = (rank = 'E', date = new Date()) => {
   const seed = parseInt(`${date.getFullYear()}${date.getMonth()}${date.getDate()}`)
   const rankQuests = QUESTS_BY_RANK[rank] || QUESTS_BY_RANK['E']
+  const extraQuests = generateExtraQuests(rank)
+  const allQuests = [...rankQuests, ...extraQuests]
   
-  const shuffled = [...rankQuests].sort((a, b) => {
-    const ra = Math.sin(seed * a.id.length) * 10000
-    const rb = Math.sin(seed * b.id.length) * 10000
+  const shuffled = [...allQuests].sort((a, b) => {
+    const ra = Math.sin(seed * a.id.length * 1.3) * 10000
+    const rb = Math.sin(seed * b.id.length * 1.3) * 10000
     return ra - rb
   })
-  return shuffled.slice(0, 4)
+  return shuffled.slice(0, 5)
 }
+

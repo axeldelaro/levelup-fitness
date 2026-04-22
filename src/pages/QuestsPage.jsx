@@ -34,14 +34,24 @@ export default function QuestsPage({ player, user }) {
     if (completed.includes(quest.id) || !player) return
 
     try {
-      await completeQuest(user.uid, quest, player)
+      const result = await completeQuest(user.uid, quest, player)
       const newCompleted = [...completed, quest.id]
       setCompleted(newCompleted)
       localStorage.setItem(`quests_${new Date().toDateString()}`, JSON.stringify(newCompleted))
+
+      // Vibrate on success
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+
       addNotification({
         type: 'success',
-        message: `+${quest.xpReward} XP, +${quest.goldReward} Or — Quête accomplie !`
+        message: `+${quest.xpReward} XP, +${quest.goldReward} 🪙 — Quête accomplie !`
       })
+
+      // Level up from quest
+      if (result?.leveledUp) {
+        useGameStore.getState().triggerLevelUp({ level: result.newLevel })
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400])
+      }
     } catch (e) {
       addNotification({ type: 'error', message: 'Erreur de synchronisation' })
     }

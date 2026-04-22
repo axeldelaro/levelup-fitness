@@ -2,10 +2,10 @@ import { useGameStore } from '../../stores/gameStore'
 import { motion } from 'framer-motion'
 
 const TABS = [
-  { id: 'dashboard', icon: '◈', label: 'Profil' },
+  { id: 'dashboard', icon: '◈', label: 'Dashboard' },
   { id: 'quests',    icon: '⚔', label: 'Quêtes' },
   { id: 'inventory', icon: '⬡', label: 'Arsenal' },
-  { id: 'settings',  icon: '◎', label: 'Système' },
+  { id: 'profile',   icon: '◎', label: 'Profil' },
 ]
 
 export default function BottomNav({ player }) {
